@@ -38,9 +38,12 @@ def create_app(config=None):
     # Register blueprints
     from app.routes.analyze import analyze_bp
     from app.routes.health import health_bp
+    from app.routes.docs import docs_bp, swaggerui_blueprint
 
     app.register_blueprint(analyze_bp, url_prefix="/api/v1")
     app.register_blueprint(health_bp, url_prefix="/api/v1")
+    app.register_blueprint(docs_bp, url_prefix="/api/v1")
+    app.register_blueprint(swaggerui_blueprint)
 
     @app.after_request
     def add_cors_headers(response):

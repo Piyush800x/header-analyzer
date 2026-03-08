@@ -1,0 +1,337 @@
+{
+  "openapi": "3.0.3",
+  "info": {
+    "title": "HTTP Header Security Analyzer API",
+    "description": "A production-ready API that audits any website's HTTP security headers, scores it out of 100, and returns actionable remediation recommendations. \n\n## Headers Checked\n| Header | Severity | Points |\n|--------|----------|--------|\n| Content-Security-Policy | HIGH | 20 |\n| Strict-Transport-Security | HIGH | 20 |\n| X-Frame-Options | MEDIUM | 15 |\n| X-Content-Type-Options | MEDIUM | 15 |\n| Referrer-Policy | LOW | 10 |\n| Permissions-Policy | LOW | 10 |\n| X-XSS-Protection | LOW | 5 |\n| Cache-Control | LOW | 5 |\n\n## Grading Scale\n| Score | Grade |\n|-------|-------|\n| 90\u2013100 | A |\n| 75\u201389 | B |\n| 55\u201374 | C |\n| 35\u201354 | D |\n| 0\u201334 | F |",
+    "version": "1.0.0",
+    "contact": {
+      "name": "API Support",
+      "url": "https://github.com/yourusername/header-analyzer"
+    },
+    "license": {
+      "name": "MIT"
+    }
+  },
+  "servers": [
+    {
+      "url": "/api/v1",
+      "description": "Current server"
+    }
+  ],
+  "tags": [
+    {
+      "name": "Analysis",
+      "description": "Header security analysis endpoints"
+    },
+    {
+      "name": "System",
+      "description": "Health and status endpoints"
+    }
+  ],
+  "paths": {
+    "/analyze": {
+      "post": {
+        "tags": [
+          "Analysis"
+        ],
+        "summary": "Analyze a URL (JSON body)",
+        "description": "Submit a URL as a JSON body to get a full security header audit.",
+        "operationId": "analyzePost",
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/AnalyzeRequest"
+              },
+              "examples": {
+                "example": {
+                  "summary": "Analyze example.com",
+                  "value": {
+                    "url": "https://example.com"
+                  }
+                }
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Analysis completed successfully",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/AnalyzeSuccess"
+                }
+              }
+            }
+          },
+          "400": {
+            "$ref": "#/components/responses/BadRequest"
+          },
+          "422": {
+            "$ref": "#/components/responses/UnprocessableEntity"
+          },
+          "429": {
+            "$ref": "#/components/responses/RateLimited"
+          }
+        }
+      },
+      "get": {
+        "tags": [
+          "Analysis"
+        ],
+        "summary": "Analyze a URL (query param)",
+        "description": "Quick scan via `?url=` query parameter. Convenient for browser testing.",
+        "operationId": "analyzeGet",
+        "parameters": [
+          {
+            "name": "url",
+            "in": "query",
+            "required": true,
+            "description": "The URL to analyze",
+            "schema": {
+              "type": "string",
+              "example": "https://example.com"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Analysis completed successfully",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/AnalyzeSuccess"
+                }
+              }
+            }
+          },
+          "400": {
+            "$ref": "#/components/responses/BadRequest"
+          },
+          "422": {
+            "$ref": "#/components/responses/UnprocessableEntity"
+          },
+          "429": {
+            "$ref": "#/components/responses/RateLimited"
+          }
+        }
+      }
+    },
+    "/health": {
+      "get": {
+        "tags": [
+          "System"
+        ],
+        "summary": "Health check",
+        "description": "Returns server status and uptime. Used by load balancers and uptime monitors.",
+        "operationId": "healthCheck",
+        "responses": {
+          "200": {
+            "description": "Server is healthy",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HealthResponse"
+                },
+                "example": {
+                  "status": "healthy",
+                  "uptime_seconds": 120,
+                  "version": "1.0.0"
+                }
+              }
+            }
+          }
+        }
+      }
+    }
+  },
+  "components": {
+    "schemas": {
+      "AnalyzeRequest": {
+        "type": "object",
+        "required": [
+          "url"
+        ],
+        "properties": {
+          "url": {
+            "type": "string",
+            "description": "The URL to analyze. Scheme (https://) is optional.",
+            "example": "https://example.com",
+            "maxLength": 2048
+          }
+        }
+      },
+      "HeaderResult": {
+        "type": "object",
+        "properties": {
+          "header": {
+            "type": "string",
+            "example": "Content-Security-Policy"
+          },
+          "present": {
+            "type": "boolean",
+            "example": false
+          },
+          "value": {
+            "type": "string",
+            "nullable": true,
+            "example": null
+          },
+          "severity": {
+            "type": "string",
+            "enum": [
+              "HIGH",
+              "MEDIUM",
+              "LOW"
+            ]
+          },
+          "description": {
+            "type": "string"
+          },
+          "recommendation": {
+            "type": "string",
+            "nullable": true
+          },
+          "docs": {
+            "type": "string",
+            "format": "uri"
+          },
+          "points": {
+            "type": "integer",
+            "example": 20
+          }
+        }
+      },
+      "AnalyzeSuccess": {
+        "type": "object",
+        "properties": {
+          "success": {
+            "type": "boolean",
+            "example": true
+          },
+          "url": {
+            "type": "string",
+            "example": "https://example.com"
+          },
+          "status_code": {
+            "type": "integer",
+            "example": 200
+          },
+          "score": {
+            "type": "integer",
+            "minimum": 0,
+            "maximum": 100,
+            "example": 55
+          },
+          "grade": {
+            "type": "string",
+            "enum": [
+              "A",
+              "B",
+              "C",
+              "D",
+              "F"
+            ],
+            "example": "C"
+          },
+          "headers_present": {
+            "type": "integer",
+            "example": 3
+          },
+          "headers_missing": {
+            "type": "integer",
+            "example": 5
+          },
+          "total_headers_checked": {
+            "type": "integer",
+            "example": 8
+          },
+          "summary": {
+            "type": "object",
+            "properties": {
+              "high_risk_missing": {
+                "type": "integer"
+              },
+              "medium_risk_missing": {
+                "type": "integer"
+              },
+              "low_risk_missing": {
+                "type": "integer"
+              }
+            }
+          },
+          "results": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/HeaderResult"
+            }
+          }
+        }
+      },
+      "HealthResponse": {
+        "type": "object",
+        "properties": {
+          "status": {
+            "type": "string",
+            "example": "healthy"
+          },
+          "uptime_seconds": {
+            "type": "integer",
+            "example": 120
+          },
+          "version": {
+            "type": "string",
+            "example": "1.0.0"
+          }
+        }
+      },
+      "ErrorResponse": {
+        "type": "object",
+        "properties": {
+          "success": {
+            "type": "boolean",
+            "example": false
+          },
+          "error": {
+            "type": "string",
+            "example": "The 'url' field is required."
+          }
+        }
+      }
+    },
+    "responses": {
+      "BadRequest": {
+        "description": "Invalid request \u2014 missing or malformed input",
+        "content": {
+          "application/json": {
+            "schema": {
+              "$ref": "#/components/schemas/ErrorResponse"
+            }
+          }
+        }
+      },
+      "UnprocessableEntity": {
+        "description": "URL could not be reached or is invalid",
+        "content": {
+          "application/json": {
+            "schema": {
+              "$ref": "#/components/schemas/ErrorResponse"
+            }
+          }
+        }
+      },
+      "RateLimited": {
+        "description": "Too many requests \u2014 rate limit exceeded",
+        "content": {
+          "application/json": {
+            "schema": {
+              "$ref": "#/components/schemas/ErrorResponse"
+            }
+          }
+        }
+      }
+    }
+  }
+}
