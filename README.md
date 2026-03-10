@@ -20,7 +20,7 @@ A production-ready REST API built with Flask that audits any website's HTTP secu
 
 ### Local (Python)
 ```bash
-git clone https://github.com/yourusername/header-analyzer
+git clone https://github.com/Piyush800x/header-analyzer
 cd header-analyzer
 pip install -r requirements.txt
 python run.py
